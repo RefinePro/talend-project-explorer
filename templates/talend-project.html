@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>Talend Project Explorer</title>
+		<link href="https://unpkg.com/normalize.css@^7.0.0" rel="stylesheet" />
+		<link href="https://unpkg.com/@blueprintjs/core@^3.0.0/lib/css/blueprint.css" rel="stylesheet" />
+		<link href="https://unpkg.com/@blueprintjs/icons@^3.0.0/lib/css/blueprint-icons.css" rel="stylesheet" />
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/gridlex/2.7.1/gridlex.min.css" />
+		
+		<script
+		src="https://code.jquery.com/jquery-3.3.1.min.js"
+		integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+		crossorigin="anonymous">
+		</script>
+		
+		<style>
+			body{
+				
+				background:#F5F8FA;
+			}
+		
+			.container{
+				padding:10px;
+			}
+		
+			.folder{
+				padding-left:20px;
+			}
+		
+			.talend-job{
+				margin-bottom: 20px;
+			}
+		
+			.screenshot-container, .component-parameters{
+				overflow: scroll;
+				max-height: 500px;
+			}
+		
+			.component-parameters{
+				display: none;
+			}
+		
+			.mb-5{
+				margin-bottom: 5px;
+			}
+		
+		</style>
+		
+		<script type="text/javascript">
+			
+			$( document ).ready(function() {
+			console.log( "ready!" );
+		
+				$('.clickable-component').click(function(event){
+					$elem = $(this);
+					var cid = '#c_'+$elem.data('component');
+				
+					$('.component-parameters').hide();
+					$(cid).show();
+		
+					event.preventDefault();
+				})
+			});
+		</script>
+		
+	</head>
+	<body>
+		
+		<nav class="bp3-navbar bp3-dark">
+			<div class="bp3-navbar-group bp3-align-left bp3-fill">
+				<div class="bp3-navbar-heading">Talend Project Explorer</div>
+				
+				<div>
+					<form method="GET">
+						<div class="bp3-control-group">
+							<input class="bp3-input bp3-fill" placeholder="Repository path" type="text" name="path" />
+							<button class="bp3-button bp3-icon-search" type="submit">Filter</button>
+						</div>
+					</form>
+				</div>
+			</div>
+
+			<div class="bp3-navbar-group bp3-align-right">
+			    <a class="bp3-button bp3-minimal bp3-icon-git-repo" href="https://github.com/RefinePro/talend-project-explorer">Source</a>
+			    
+			  </div>
+		</nav>
+		
+		{% set jobsRoot = doc['jobs'] %}
+
+		
+		{% macro job_folder(folder, folderName) -%}
+		
+		<div class="folder">
+			<h2>/{{ folderName }}</h2>
+			{% for key in folder %}
+				{% set item = folder[key] %}
+				{% if item['isJob'] == true %}
+					{{ talend_job(item) }}
+				{% else %}
+					{{ job_folder(item, key) }}
+				{% endif %}
+			{% endfor %}
+			
+		</div>
+		{%- endmacro %}
+		
+		
+		
+		
+		{% macro talend_job(job) -%}
+		
+		
+		<div class="bp3-card bp3-elevation-2 talend-job">
+			<div class="job-header">
+				<h5 class="bp3-heading">{{ job.name }}</h5>
+				<!-- <div class="bp3-select">
+						<select>
+								{% for version in job.versions %}
+										<option value="{{ version }}">{{ version }}</option>
+								{% endfor %}
+						</select>
+				</div> -->
+			</div>
+			
+			
+			<div class="job-content">
+				
+				{% for versionNumber in job.versions %}
+					{% set version = job['versions'][versionNumber] %}
+					
+					
+					
+					<div class="grid">
+						<div class="col-8">
+							<div class="screenshot-container">
+								<img src="data:image/png;base64, {{ version['screenshots'] }}" alt="Red dot" usemap="#jobmap_{{ job.name }}_{{ versionNumber }}" />
+								
+								<map id="jobmap_{{ job.name }}_{{ versionNumber }}" name="jobmap_{{ job.name }}_{{ versionNumber }}">
+								{% for component in version['components'] %}
+									{% set posX = component['posX']|int + version['parameters']['SCREEN_OFFSET_X'].value|int %}
+									{% set posY = component['posY']|int + version['parameters']['SCREEN_OFFSET_Y'].value|int %}
+									{% set posX2 = posX|int +32 %}
+									{% set posY2 = posY|int +32 %}
+									{% set _uniqueIdentifier = job.name+'_'+versionNumber+'_'+component['unique_name'] %}
+									{% set uniqueIdentifier = _uniqueIdentifier|replace('.', '-') %}
+									
+									<area class="clickable-component" shape="rect" data-component="{{ uniqueIdentifier }}" coords="{{ posX }},{{ posY }},{{ posX2 }},{{ posY2 }}" href="#{{ component['unique_name'] }}" alt="{{ component['unique_name'] }}">
+									{% endfor %}
+									</map>
+									
+								</div>
+							</div>
+							
+							<div class="col-4">
+								{% for component in version['components'] %}
+									{% set _uniqueIdentifier = job.name+'_'+versionNumber+'_'+component['unique_name'] %}
+									{% set uniqueIdentifier = _uniqueIdentifier|replace('.', '-') %}
+									
+									<div class="component-parameters" id="c_{{ uniqueIdentifier }}">
+										<h5>{{ component['unique_name'] }}</h5>
+										{% if component.parameters|length %}
+											<table class="bp3-html-table bp3-condensed bp3-html-table-striped bp3-html-table-bordered bp3-interactive">
+												{% for parameterName in component.parameters %}
+													<tr>
+														<td>{{ parameterName }}</td>
+														<td>{{ component.parameters[parameterName].value }}</td>
+													</tr>
+												{% endfor %}
+											</table>
+										{% else %}
+											No parameters for this component
+										{% endif %}
+									</div>
+								{% endfor %}
+								
+							</div>
+							
+						</div>
+					{% endfor %}
+					
+				</div>
+			</div>
+			
+			
+			
+			{%- endmacro %}
+			
+			
+			<div class="container">
+				{% if doc %}
+					<div class="bp3-card repo">
+						<div>
+							{% set commit = doc.repo.commit('master') %}
+							
+							<span class="mb-5 bp3-tag bp3-intent-primary bp3-icon-repo">Repo</span> : {{ path }}<br>
+							<span class="mb-5 bp3-tag bp3-intent-primary bp3-icon-git-commit">Commit</span> : {{ commit }}<br>
+							<span class="mb-5 bp3-tag bp3-intent-primary bp3-icon-user">Author</span> : {{ commit.author.name }}<br>
+							<span class="mb-5 bp3-tag bp3-intent-primary bp3-icon-time">Date</span> : {{ commit.committed_date }}<br>
+							<span class="mb-5 bp3-tag bp3-intent-primary bp3-icon-label">Date</span> : {{ commit.message }}<br>
+							
+						</div>
+					</div>
+				{% endif %}
+				
+				
+				<div class="jobs">
+					{% if doc %}
+						{{ job_folder(doc['jobs']['process'], 'process') }}
+					{% endif %}
+				</div>
+				
+				
+			</div>
+			
+			
+			
+			
+			
+		</body>
+	</html>
