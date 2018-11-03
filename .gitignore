@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *.bck
+*.wsgi
 # C extensions
 *.so
 
