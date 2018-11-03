@@ -103,7 +103,7 @@ class TalendDoc:
     def get_local_copy(self):
         repoName = self.path[self.path.rfind('/')+1:]
         repoName = repoName[0:repoName.rfind('.')]
-        self.copyPath = os.path.join(os.path.realpath(__file__), "..", "data", repoName)
+        self.copyPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "data", repoName)
 
         if os.path.isdir(self.copyPath):
             repo = Repo(self.copyPath)
